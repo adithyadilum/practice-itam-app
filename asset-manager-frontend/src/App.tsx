@@ -1,215 +1,154 @@
-import { useEffect, useState } from "react";
-import { getAssets, createAsset, deleteAsset, updateAsset } from "./api";
+import { useCallback, useEffect, useMemo, useState } from "react"
+import { createAsset, deleteAsset, getAssets, updateAsset } from "./api"
+import AppShell from "./components/AppShell"
+import AssetFormModal from "./components/AssetFormModal"
+import AssetTable from "./components/AssetTable"
+import StatCard from "./components/StatCard"
+import type { Asset, AssetPayload } from "./types"
 
-interface Asset {
-  id: number;
-  name: string;
-  category?: string;
-  quantity?: number;
-}
+const App = () => {
+  const [assets, setAssets] = useState<Asset[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [createOpen, setCreateOpen] = useState(false)
+  const [editingAsset, setEditingAsset] = useState<Asset | null>(null)
+  const [pendingActionId, setPendingActionId] = useState<number | null>(null)
 
-function App() {
-  const [assets, setAssets] = useState<Asset[]>([]);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editAsset, setEditAsset] = useState<Asset | null>(null);
-
-  // Form state
-  const [name, setName] = useState("");
-  const [category, setCategory] = useState("");
-  const [quantity, setQuantity] = useState(1);
+  const fetchAssets = useCallback(async ({ silent = false }: { silent?: boolean } = {}) => {
+    try {
+      if (!silent) {
+        setLoading(true)
+      }
+      const { data } = await getAssets()
+      setAssets(data)
+      setError(null)
+    } catch (err) {
+      console.error("Failed to fetch assets", err)
+      setError("Unable to load assets right now. Please retry in a moment.")
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
   useEffect(() => {
-    fetchAssets();
-  }, []);
+    fetchAssets()
+  }, [fetchAssets])
 
-  const fetchAssets = async () => {
-    try {
-      const res = await getAssets();
-      setAssets(res.data);
-    } catch (err) {
-      console.error(err);
+  const stats = useMemo(() => {
+    const categories = new Set(assets.map((asset) => asset.category).filter(Boolean))
+    const totalQuantity = assets.reduce((sum, asset) => sum + (asset.quantity ?? 0), 0)
+    const avgQuantity = assets.length ? Math.round(totalQuantity / assets.length) : 0
+
+    return {
+      total: assets.length,
+      categories: categories.size,
+      quantity: totalQuantity,
+      avgQuantity,
     }
-  };
+  }, [assets])
 
-  const handleAdd = async () => {
-    if (!name) return alert("Name is required");
+  const handleCreate = async (payload: AssetPayload) => {
     try {
-      await createAsset({ name, category, quantity });
-      setName("");
-      setCategory("");
-      setQuantity(1);
-      setModalOpen(false); // Close modal
-      fetchAssets();
+      await createAsset(payload)
+      setCreateOpen(false)
+      await fetchAssets({ silent: true })
     } catch (err) {
-      console.error(err);
+      console.error("Failed to create asset", err)
+      setError("Could not create the asset. Please try again.")
     }
-  };
-
-  const handleDelete = async (id: number) => {
-    if (!window.confirm("Are you sure you want to delete this asset?")) return;
-    try {
-      await deleteAsset(id);
-      fetchAssets();
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const handleEditClick = (asset: Asset) => {
-    setEditAsset(asset);
   }
 
+  const handleUpdate = async (payload: AssetPayload) => {
+    if (!editingAsset) return
+    try {
+      setPendingActionId(editingAsset.id)
+      await updateAsset(editingAsset.id, payload)
+      setEditingAsset(null)
+      await fetchAssets({ silent: true })
+    } catch (err) {
+      console.error("Failed to update asset", err)
+      setError("Could not update the asset. Please try again.")
+    } finally {
+      setPendingActionId(null)
+    }
+  }
+
+  const handleDelete = async (asset: Asset) => {
+    if (!window.confirm(`Delete ${asset.name}? This action cannot be undone.`)) return
+    try {
+      setPendingActionId(asset.id)
+      await deleteAsset(asset.id)
+      await fetchAssets({ silent: true })
+    } catch (err) {
+      console.error("Failed to delete asset", err)
+      setError("Could not delete the asset. Please try again.")
+    } finally {
+      setPendingActionId(null)
+    }
+  }
+
+  const actionButton = (
+    <button
+      className="rounded-full border border-white/30 bg-white/10 px-6 py-3 text-sm font-semibold text-white transition hover:border-white/60 hover:bg-white/20"
+      onClick={() => setCreateOpen(true)}
+    >
+      + New asset
+    </button>
+  )
+
+  const statCards = (
+    <>
+      <StatCard label="Tracked assets" value={stats.total.toString()} helper="Active records" />
+      <StatCard label="Categories" value={stats.categories.toString()} helper="Classification groups" />
+      <StatCard label="Total quantity" value={stats.quantity.toString()} helper="Units across all assets" />
+      <StatCard label="Avg. quantity" value={stats.avgQuantity.toString()} helper="Per asset" />
+    </>
+  )
+
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center p-4">
-      <h1 className="text-3xl font-bold mb-6">Asset Manager</h1>
-
-      {/* Add Asset Button */}
-      <button
-        onClick={() => setModalOpen(true)}
-        className="bg-blue-500 text-white px-4 py-2 rounded mb-4"
-      >
-        Add Asset
-      </button>
-
-      {/* Modal */}
-      {modalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded shadow-lg w-96">
-            <h2 className="text-xl font-bold mb-4">Add New Asset</h2>
-            <div className="flex flex-col gap-2">
-              <input
-                type="text"
-                placeholder="Name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="border p-2"
-              />
-              <input
-                type="text"
-                placeholder="Category"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="border p-2"
-              />
-              <input
-                type="number"
-                placeholder="Quantity"
-                value={quantity}
-                onChange={(e) => setQuantity(Number(e.target.value))}
-                className="border p-2"
-              />
-              <div className="flex justify-end gap-2 mt-4">
-                <button
-                  onClick={() => setModalOpen(false)}
-                  className="px-4 py-2 border rounded"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleAdd}
-                  className="px-4 py-2 bg-blue-500 text-white rounded"
-                >
-                  Add
-                </button>
-              </div>
-            </div>
-          </div>
+    <AppShell
+      title="Asset Intelligence Console"
+      subtitle="Track equipment, quantify inventory, and get ready for show-and-tell demos with a production-ready UI."
+      actions={actionButton}
+      stats={statCards}
+    >
+      {error && (
+        <div className="mb-8 flex items-center justify-between rounded-2xl border border-rose-500/30 bg-rose-500/10 px-6 py-4 text-sm text-rose-100">
+          <span>{error}</span>
+          <button
+            className="rounded-full border border-rose-400/50 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-rose-100"
+            onClick={() => fetchAssets()}
+          >
+            Retry
+          </button>
         </div>
       )}
 
-      {editAsset && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-          <div className="bg-white p-6 rounded shadow-lg w-96">
-            <h2 className="text-xl font-bold mb-4">Edit Asset</h2>
-            <div className="flex flex-col gap-2">
-              <input
-                type="text"
-                placeholder="Name"
-                value={editAsset.name}
-                onChange={(e) => setEditAsset({ ...editAsset, name: e.target.value })}
-                className="border p-2"
-              />
-              <input
-                type="text"
-                placeholder="Category"
-                value={editAsset.category}
-                onChange={(e) => setEditAsset({ ...editAsset, category: e.target.value })}
-                className="border p-2"
-              />
-              <input
-                type="number"
-                placeholder="Quantity"
-                value={editAsset.quantity}
-                onChange={(e) => setEditAsset({ ...editAsset, quantity: Number(e.target.value) })}
-                className="border p-2"
-              />
-              <div className="flex justify-end gap-2 mt-4">
-                <button
-                  onClick={() => setEditAsset(null)}
-                  className="px-4 py-2 border rounded"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={async () => {
-                    if (!editAsset) return;
-                    await updateAsset(editAsset.id, {
-                      name: editAsset.name,
-                      category: editAsset.category,
-                      quantity: editAsset.quantity,
-                    });
-                    setEditAsset(null);
-                    fetchAssets();
-                  }}
-                  className="px-4 py-2 bg-green-500 text-white rounded"
-                >
-                  Save
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <AssetTable
+        assets={assets}
+        loading={loading}
+        pendingActionId={pendingActionId}
+        onEdit={(asset) => setEditingAsset(asset)}
+        onDelete={handleDelete}
+      />
 
-      {/* Assets Table */}
-      <div className="w-full max-w-4xl bg-white shadow-md rounded p-4 mt-4">
-        <table className="table-auto w-full border-collapse border border-gray-300">
-          <thead>
-            <tr className="bg-gray-200">
-              <th className="border border-gray-300 px-4 py-2">ID</th>
-              <th className="border border-gray-300 px-4 py-2">Name</th>
-              <th className="border border-gray-300 px-4 py-2">Category</th>
-              <th className="border border-gray-300 px-4 py-2">Quantity</th>
-            </tr>
-          </thead>
-          <tbody>
-            {assets.map((asset) => (
-              <tr key={asset.id}>
-                <td className="border border-gray-300 px-4 py-2">{asset.id}</td>
-                <td className="border border-gray-300 px-4 py-2">{asset.name}</td>
-                <td className="border border-gray-300 px-4 py-2">{asset.category}</td>
-                <td className="border border-gray-300 px-4 py-2">{asset.quantity}</td>
-                <td className="border border-gray-300 px-4 py-2 flex gap-2">
-                  <button
-                    onClick={() => handleEditClick(asset)}
-                    className="px-2 py-1 bg-yellow-400 text-white rounded"
-                  >
-                    Edit
-                  </button>
-                  <button
-                    onClick={() => handleDelete(asset.id)}
-                    className="px-2 py-1 bg-red-500 text-white rounded"
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
+      <AssetFormModal
+        isOpen={createOpen}
+        mode="create"
+        initialValues={null}
+        onClose={() => setCreateOpen(false)}
+        onSubmit={handleCreate}
+      />
+
+      <AssetFormModal
+        isOpen={Boolean(editingAsset)}
+        mode="edit"
+        initialValues={editingAsset}
+        onClose={() => setEditingAsset(null)}
+        onSubmit={handleUpdate}
+      />
+    </AppShell>
+  )
 }
 
-export default App;
+export default App
