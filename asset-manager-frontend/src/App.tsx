@@ -107,8 +107,8 @@ const App = () => {
 
   return (
     <AppShell
-      title="Asset Intelligence Console"
-      subtitle="Track equipment, quantify inventory, and get ready for show-and-tell demos with a production-ready UI."
+      title="Asset Management Console"
+      subtitle="Track equipment, quantify inventory, and manage resources with ease."
       actions={actionButton}
       stats={statCards}
     >

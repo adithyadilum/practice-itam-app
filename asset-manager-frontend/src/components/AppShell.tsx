@@ -29,7 +29,7 @@ const AppShell = ({ title, subtitle, actions, stats, children }: AppShellProps) 
                     {stats && <div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{stats}</div>}
                 </div>
             </div>
-            <main className="mx-auto -mt-12 w-full max-w-6xl px-4 pb-16 sm:px-6 lg:px-8">
+            <main className="mx-auto -mt-12 w-full max-w-6xl px-4 pb-16 pt-12 sm:px-6 sm:pt-16 lg:pt-20 lg:px-8">
                 {children}
             </main>
         </div>
