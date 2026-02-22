@@ -5,6 +5,7 @@ import cors from 'cors';
 import { db } from './db';
 import { assets } from './db/schema';
 import assetsRouter from './routes/assets';
+import auditRouter from './routes/audit';
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -12,6 +13,7 @@ const PORT = process.env.PORT || 5000;
 app.use(cors());
 app.use(express.json());
 app.use("/assets", assetsRouter);
+app.use("/audit", auditRouter);
 
 app.get("/", (req, res) => {
     res.send("Asset Manager Backend is running");
