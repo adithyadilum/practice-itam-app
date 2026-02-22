@@ -3,6 +3,7 @@ import { db } from "../db";
 import { assets } from "../db/schema";
 import { eq, and, ilike, gte, lte, SQL } from "drizzle-orm";
 import { logAuditEvent } from "../services/audit";
+import { generateAssetId } from "../middleware/assetId";
 
 const router = Router();
 
@@ -53,7 +54,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.post("/", async (req, res) => {
+router.post("/", generateAssetId, async (req, res) => {
   try {
     const { name, category, quantity, serialNumber, assetTag } = req.body;
     if (!name) return res.status(400).json({ error: "Name is required" });

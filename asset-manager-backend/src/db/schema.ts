@@ -1,13 +1,13 @@
-import { 
-  pgTable, 
-  serial, 
-  varchar, 
-  text, 
-  integer, 
-  timestamp, 
-  jsonb, 
-  uniqueIndex, 
-  index 
+import {
+  pgTable,
+  serial,
+  varchar,
+  text,
+  integer,
+  timestamp,
+  jsonb,
+  uniqueIndex,
+  index
 } from "drizzle-orm/pg-core";
 
 export const assets = pgTable("assets", {
@@ -29,7 +29,7 @@ export const assets = pgTable("assets", {
 
 export const auditLogs = pgTable("audit_logs", {
   id: serial("id").primaryKey(),
-  assetId: integer("asset_id").references(() => assets.id, { onDelete: "cascade" }).notNull(),
+  assetId: integer("asset_id").notNull(),
   action: varchar("action", { length: 20 }).notNull(),
   payload: jsonb("payload").$type<Record<string, unknown>>().notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),

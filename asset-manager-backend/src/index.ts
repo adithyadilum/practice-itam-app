@@ -24,6 +24,10 @@ app.listen(PORT, () => {
 });
 
 (async () => {
-    const result = await db.select().from(assets);
-    console.log("DB Connected. Assets:", result);
+    try {
+        const result = await db.select().from(assets);
+        console.log("DB Connected. Assets:", result.length);
+    } catch (error) {
+        console.error("DB Connection Error:", error);
+    }
 })();
