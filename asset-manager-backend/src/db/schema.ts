@@ -1,18 +1,29 @@
-import { pgTable, serial, text, integer, uniqueIndex, index } from "drizzle-orm/pg-core";
+import { 
+  pgTable, 
+  serial, 
+  varchar, 
+  integer, 
+  decimal, 
+  date,
+  timestamp 
+} from 'drizzle-orm/pg-core';
 
 export const assets = pgTable("assets", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  category: text("category"),
-  quantity: integer("quantity").default(1),
-  // New fields
-  serialNumber: text("serial_number"),
-  assetTag: text("asset_tag"),
-}, (table) => {
-  return {
-    // Unique index: Prevents duplicates and makes search instant
-    serialNumIdx: uniqueIndex("serial_number_idx").on(table.serialNumber),
-    assetTagIdx: uniqueIndex("asset_tag_idx").on(table.assetTag),
-    nameIdx: index("name_idx").on(table.name),
-  };
+    id: serial("id").primaryKey(),
+
+    name: varchar("name", { length: 255 }).notNull(),
+
+    category: varchar("category", { length: 100 }),
+
+    quantity: integer("quantity").default(1),
+
+    purchaseCost: decimal("purchase_cost", { precision: 10, scale: 2 }),
+
+    purchaseDate: date("purchase_date"),
+
+    usefulLifeYears: integer("useful_life_years").default(5),
+
+    salvageValue: decimal("salvage_value", { precision: 10, scale: 2 }).default("0"),
+
+    createdAt: timestamp("created_at").defaultNow()
 });
