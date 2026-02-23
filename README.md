@@ -12,4 +12,3 @@ Simple IT asset management playground that pairs a Node/Express API (with Drizzl
 - `asset-manager-backend/` – REST API, database layer, migrations
 - `asset-manager-frontend/` – React client (components, API hooks, styles)
 
-![App screenshot](image.png)

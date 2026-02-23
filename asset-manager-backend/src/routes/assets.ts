@@ -5,6 +5,7 @@ import { eq, and, ilike, gte, lte, SQL } from "drizzle-orm";
 import { calculateStraightLineDepreciation } from "../services/depreciation.service";
 import { logAuditEvent } from "../services/audit";
 import { generateAssetId } from "../middleware/assetId";
+import { verifyToken } from "../middleware/authMiddleware";
 
 const router = Router();
 
@@ -57,7 +58,7 @@ router.get("/", async (req, res) => {
 });
 
 // POST new asset
-router.post("/", generateAssetId, async (req, res) => {
+router.post("/", verifyToken, generateAssetId, async (req, res) => {
   try {
     const {
       name,
@@ -170,7 +171,7 @@ router.get("/:id", async (req, res) => {
 });
 
 // PUT /assets/:id
-router.put("/:id", async (req, res) => {
+router.put("/:id", verifyToken, async (req, res) => {
   try {
     const id = Number(req.params.id);
 
@@ -230,7 +231,7 @@ router.put("/:id", async (req, res) => {
 });
 
 // DELETE /assets/:id
-router.delete("/:id", async (req, res) => {
+router.delete("/:id", verifyToken, async (req, res) => {
   try {
     const id = Number(req.params.id);
 
