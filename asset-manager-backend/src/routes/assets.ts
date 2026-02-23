@@ -16,23 +16,23 @@ router.get("/search", async (req, res) => {
 
     const filters: SQL[] = [];
 
-    if (name) {
+    if (name && typeof name === "string" && name.trim().length > 0) {
       filters.push(ilike(assets.name, `%${name}%`));
     }
-    if (category) {
-      filters.push(eq(assets.category, category as string));
+    if (category && typeof category === "string" && category.trim().length > 0) {
+      filters.push(eq(assets.category, category));
     }
-    if (minQty) {
+    if (minQty && typeof minQty === "string" && minQty.trim().length > 0) {
       filters.push(gte(assets.quantity, Number(minQty)));
     }
-    if (maxQty) {
+    if (maxQty && typeof maxQty === "string" && maxQty.trim().length > 0) {
       filters.push(lte(assets.quantity, Number(maxQty)));
     }
-    if (serialNumber) {
-      filters.push(eq(assets.serialNumber, serialNumber as string));
+    if (serialNumber && typeof serialNumber === "string" && serialNumber.trim().length > 0) {
+      filters.push(eq(assets.serialNumber, serialNumber));
     }
-    if (assetTag) {
-      filters.push(eq(assets.assetTag, assetTag as string));
+    if (assetTag && typeof assetTag === "string" && assetTag.trim().length > 0) {
+      filters.push(eq(assets.assetTag, assetTag));
     }
 
     const results = await db
