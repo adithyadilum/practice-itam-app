@@ -2,6 +2,7 @@ import dotenv from "dotenv";
 dotenv.config();
 import express from 'express';
 import cors from 'cors';
+import jwt from 'jsonwebtoken';
 import { db } from './db';
 import { assets } from './db/schema';
 import assetsRouter from './routes/assets';
@@ -12,6 +13,21 @@ const PORT = process.env.PORT || 5000;
 
 app.use(cors());
 app.use(express.json());
+
+// Demo Login Route to generate JWT token
+app.post("/login", (req, res) => {
+    const { username } = req.body;
+    if (!username) {
+        return res.status(400).json({ message: "Username is required" });
+    }
+
+    const role = username === "admin" ? "Admin" : "Viewer";
+    const secret = process.env.JWT_SECRET || "default_secret";
+
+    const token = jwt.sign({ username, role }, secret, { expiresIn: "1h" });
+    res.json({ token });
+});
+
 app.use("/assets", assetsRouter);
 app.use("/audit", auditRouter);
 
