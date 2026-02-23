@@ -4,6 +4,8 @@ import {
   varchar,
   text,
   integer,
+  decimal,
+  date,
   timestamp,
   jsonb,
   uniqueIndex,
@@ -15,9 +17,17 @@ export const assets = pgTable("assets", {
   name: text("name").notNull(),
   category: text("category"),
   quantity: integer("quantity").default(1),
-  // New fields from main
+  
+  // Fields from main
   serialNumber: text("serial_number"),
   assetTag: text("asset_tag"),
+  
+  // Financial fields from feature/depreciation-logic
+  purchaseCost: decimal("purchase_cost", { precision: 10, scale: 2 }),
+  purchaseDate: date("purchase_date"),
+  usefulLifeYears: integer("useful_life_years").default(5),
+  salvageValue: decimal("salvage_value", { precision: 10, scale: 2 }).default("0"),
+  createdAt: timestamp("created_at").defaultNow()
 }, (table) => {
   return {
     // Unique index: Prevents duplicates and makes search instant
